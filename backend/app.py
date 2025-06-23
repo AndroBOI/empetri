@@ -1,8 +1,7 @@
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, after_this_request
 from flask_cors import CORS
 from youtubesearchpython import VideosSearch
-import yt_dlp
-import os, uuid, glob
+import yt_dlp, os, uuid, glob
 
 app = Flask(__name__)
 CORS(app)
@@ -11,13 +10,13 @@ CORS(app)
 def youtube_search():
     query = request.args.get("query", "stupid love")
     try:
-        search = VideosSearch(query, limit=1)
-        video = search.result()["result"][0]
+        video = VideosSearch(query, limit=1).result()["result"][0]
         video["link"] = f"https://www.youtube.com/watch?v={video['id']}"
         return jsonify(video)
     except Exception as e:
         print("🔥 SEARCH ERROR:", e)
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/api/youtube/download", methods=["POST"])
 def download_video():
@@ -26,27 +25,26 @@ def download_video():
         if not video_url:
             return jsonify({"error": "No URL provided"}), 400
 
-        out_dir = os.path.join(os.getcwd(), "downloads")
-        os.makedirs(out_dir, exist_ok=True)
-        base_id = uuid.uuid4().hex
+        out_dir  = "/tmp"                       
+        base_id  = uuid.uuid4().hex
         out_tmpl = os.path.join(out_dir, f"{base_id}.%(ext)s")
 
-       
         ydl_opts = {
             "format": "bestaudio[ext=m4a]/bestaudio/best",
-            "outtmpl": out_tmpl
+            "outtmpl": out_tmpl,
+            "quiet": True,
         }
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([video_url])
 
-        m4a_path = os.path.join(out_dir, f"{base_id}.m4a")
-        if not os.path.exists(m4a_path):
-           
-            candidates = glob.glob(os.path.join(out_dir, f"{base_id}*.m4a"))
-            if not candidates:
-                raise FileNotFoundError("M4A file was not generated")
-            m4a_path = candidates[0]
+        m4a_path = glob.glob(os.path.join(out_dir, f"{base_id}*.m4a"))[0]
+
+
+        @after_this_request
+        def cleanup(resp):
+            try: os.remove(m4a_path)
+            except: pass
+            return resp
 
         return send_file(m4a_path, as_attachment=True)
 
@@ -54,6 +52,7 @@ def download_video():
         print("🔥 DOWNLOAD ERROR:", e)
         return jsonify({"error": str(e)}), 500
 
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    import os
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
