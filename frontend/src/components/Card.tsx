@@ -52,7 +52,7 @@ function Card({ search }: Props) {
       const url = window.URL.createObjectURL(new Blob([res.data]))
       const link = document.createElement("a")
       link.href = url
-      link.setAttribute("download", `${result.title}.mp3`)
+      link.setAttribute("download", `${result.title}.m4a`)
       document.body.appendChild(link)
       link.click()
       link.remove()

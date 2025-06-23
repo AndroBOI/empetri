@@ -1,23 +1,24 @@
-git
-# Python
+# === Python ===
 backend/venv/
-*.pyc
+*.py[cod]
 __pycache__/
-*.pyo
-*.pyd
 .Python
 .env
 
-# Node (frontend)
+# === Node (frontend) ===
 frontend/node_modules/
 frontend/dist/
 frontend/.env
 
-# OS-specific
+# === OS-specific ===
 .DS_Store
 Thumbs.db
 
-# IDEs/editors
+# === IDEs/editors ===
 .vscode/
 .idea/
 *.log
+
+# === Zip/binary files ===
+*.zip
+*.exe
